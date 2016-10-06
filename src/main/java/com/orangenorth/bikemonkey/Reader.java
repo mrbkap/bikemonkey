@@ -9,12 +9,25 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Vector;
 
 public class Reader {
     public static void main(String[] args) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(new File("males.txt"));
-        Rider[] riders = mapper.treeToValue(node.get("records"), Rider[].class);
+        String[] filenames;
+        if (args.length == 0) {
+            filenames = new String[] { "males.txt" };
+        } else {
+            filenames = args;
+        }
+
+        Vector<Rider> riders = new Vector<Rider>();
+        for (int i = 0; i < filenames.length; i++) {
+            JsonNode node = mapper.readTree(new File(filenames[i]));
+            Rider[] records = mapper.treeToValue(node.get("records"), Rider[].class);
+            riders.addAll(Arrays.asList(records));
+        }
 
         PeriodFormatter formatter = new PeriodFormatterBuilder()
                 .appendHours()
@@ -24,15 +37,15 @@ public class Reader {
                 .appendSeconds()
                 .toFormatter();
 
-        Arrays.sort(riders, (r1, r2) -> {
+        Collections.sort(riders, (r1, r2) -> {
             Duration d1 = formatter.parsePeriod(r1.elapsedtime).toStandardDuration();
             Duration d2 = formatter.parsePeriod(r2.elapsedtime).toStandardDuration();
             return d1.compareTo(d2);
         });
 
-        for (int i = 0; i < riders.length; i++) {
-            Rider r = riders[i];
-            System.out.format("%d: %s %s - %s\n", i, r.firstname, r.lastname, r.elapsedtime);
+        for (int i = 0; i < riders.size(); i++) {
+            Rider r = riders.get(i);
+            System.out.format("%d: [%s] %s %s - %s\n", i + 1, r.bib, r.firstname, r.lastname, r.elapsedtime);
         }
     }
 }
